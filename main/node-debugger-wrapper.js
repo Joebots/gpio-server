@@ -172,19 +172,19 @@ class NodeDebuggerWrapper extends EventEmitter {
 
     onData(buffer){
         let entry = buffer.toString();
-
-        if(Util.isBreakpointToken(entry)){
-            let breakpoint = Object.assign({}, Util.parseBreakpointInfo(entry));
-            this.activeBreakpoint = breakpoint
-        }
-
         this.log.push(entry)
         this.notifyStateChanged(entry);
     }
 
     notifyStateChanged(entry) {
 
-        console.log("--'", entry.trim(), "'--")
+        // console.log("---------------------------->\n", entry.trim(), "\n<----------------------------")
+        console.log(entry)
+
+        if(Util.isBreakpointToken(entry)){
+            let breakpoint = Object.assign({}, Util.parseBreakpointInfo(entry));
+            this.activeBreakpoint = breakpoint
+        }
 
         if (this.activeBreakpoint && this.isPaused()) {
             this.emit("breakpoint-reached", Object.assign({}, this.activeBreakpoint))
@@ -208,7 +208,7 @@ class NodeDebuggerWrapper extends EventEmitter {
         }
 
         if (Util.isWatchers(entry)){
-            this.emit("watchers")
+            this.emit("watchers", Util.parseWatchList(entry))
         }
 
         if (Util.isList(entry)){
@@ -250,7 +250,6 @@ class NodeDebuggerWrapper extends EventEmitter {
     information(infoCmd) {
         try {
             // //console.log(`=========== ${infoCmd} ===========`)
-            console.log(infoCmd + "\n")
             new DebuggerClosure(this.fork, infoCmd).execute()
         }
         catch(e){
@@ -274,15 +273,8 @@ class NodeDebuggerWrapper extends EventEmitter {
             throw `setBreakpoint(file:${file}, line:${line}) failed`
         }
 
-        let cmd = NodeDebuggerWrapper.Breakpoints.SET.replaceAll("$1", file).replaceAll("$2", line);
-
-        try{
-            //console.log(`=========== ${cmd} ===========`)
-            new DebuggerClosure(this.fork, cmd).execute()
-        }
-        catch(e){
-            //console.error(e)
-        }
+        let command = new Command(NodeDebuggerWrapper.Breakpoints.SET, [file, line])
+        this.execute(command)
     }
 
     clearBreakpoint(file, line){
@@ -291,18 +283,13 @@ class NodeDebuggerWrapper extends EventEmitter {
             throw `clearBreakpoint(file:${file}, line:${line}) failed`
         }
 
-        let cmd = NodeDebuggerWrapper.Breakpoints.CLEAR.replaceAll("$1", file).replaceAll("$2", line);
+        let command = new Command(NodeDebuggerWrapper.Breakpoints.CLEAR, [file, line])
+        this.execute(command)
 
-        try{
-            //console.log(`=========== ${cmd} ===========`)
-            new DebuggerClosure(this.fork, cmd).execute()
-        }
-        catch(e){
-            //console.error(e)
-        }
     }
 
     lastOutputLine(){
+
         if(this.log.length > 0)
             return this.log.slice(-2)[0]
 
@@ -315,6 +302,7 @@ class NodeDebuggerWrapper extends EventEmitter {
             return this.log.slice(-1)[0]
 
         return ""
+
     }
 
     isPaused() {

@@ -261,35 +261,37 @@ describe("Debugger Wrapper has", ()=> {
 
                 cnt++
             })
+
             test.start();
         })
 
         it("it sets a forward breakpoint in an imported file being debugged", (done)=>{
-                let test = new Debugger(file)
-                let passed = false
-                let cnt = 0
 
-                setTimeout(()=>{
-                    done()
-                    test.kill()
-                    assert(passed, "timed out waiting for breakpoint")
-                }, 1900)
+            let test = new Debugger(file)
+            let passed = false
+            let cnt = 0
 
-                test.on("breakpoint-reached", (breakpoint)=>{
-                    console.log("breakpoint reached cnt:", cnt, breakpoint)
+            setTimeout(()=>{
+                done()
+                test.kill()
+                assert(passed, "timed out waiting for breakpoint")
+            }, 1900)
 
-                    if(cnt == 0){
-                        test.setBreakpoint("test/resources/an-include-file-to-debug.js", 9);
-                        test.step(Debugger.StepCommand.CONTINUE)
-                    }
+            test.on("breakpoint-reached", (breakpoint)=>{
+                console.log("breakpoint reached cnt:", cnt, breakpoint)
 
-                    if(cnt == 1){
-                        passed = breakpoint.lineNbr == 9
-                    }
+                if(cnt == 0){
+                    test.setBreakpoint("test/resources/an-include-file-to-debug.js", 9);
+                    test.step(Debugger.StepCommand.CONTINUE)
+                }
 
-                    cnt++
-                })
-                test.start();
+                if(cnt == 1){
+                    passed = breakpoint.lineNbr == 9
+                }
+
+                cnt++
+            })
+            test.start();
         })
 
         it("it clears a breakpoint", (done)=>{
@@ -313,10 +315,13 @@ describe("Debugger Wrapper has", ()=> {
                     test.setBreakpoint(include, 11);
                 }
 
+                if(cnt == 1){
+                    test.clearBreakpoint(include, 10)
+                    passed = breakpoint.lineNbr === 9
+                }
+
                 if(cnt == 2){
-                    console.log("clearing breakpoint on line 11")
-                    test.clearBreakpoint(include, 11)
-                    passed = true
+                    passed = passed && breakpoint.lineNbr === 11
                 }
 
                 if(cnt == 3){
@@ -324,11 +329,7 @@ describe("Debugger Wrapper has", ()=> {
                     passed = false
                 }
 
-                // this means all the Input to the debugger should be throttled if it's ever used in
-                // automation.   But that's not an issue for our use case, so let's not worry about it!
-                // setTimeout(()=>{
-                    test.step(Debugger.StepCommand.CONTINUE)
-                // }, 10)
+                test.step(Debugger.StepCommand.CONTINUE)
 
                 cnt++
             })
@@ -388,11 +389,69 @@ describe("Debugger Wrapper has", ()=> {
 
         // watch(expr): Add expression to watch list
         it("it adds an expression to the watch list", (done)=>{
+            let test = new Debugger(file)
+            let passed = false
+            let cnt = 0
 
+            setTimeout(()=>{
+                done()
+                test.kill()
+                assert(passed, "timed out waiting for breakpoint")
+            }, 1900)
+
+            test.on("breakpoint-reached", (breakpoint)=>{
+                console.log("breakpoint reached cnt:", breakpoint)
+
+                if(cnt == 0) {
+                    test.execute(new Debugger.Command(Debugger.Command.Information.WATCH, ["'a'"]))
+                    test.step(Debugger.StepCommand.NEXT)
+                    cnt++
+                }
+            })
+
+            test.on("watchers", (watchlist)=>{
+                console.log("watchers reached\n", file, "\n", watchlist)
+                passed = true
+            })
+
+            test.start()
         })
 
         // unwatch(expr): Remove expression from watch list
-        it("it removes an expression from the watch list", (done)=>{})
+        it("it removes an expression from the watch list", (done)=>{
+            let test = new Debugger(file)
+            let passed = false
+            let cnt = 0
+
+            setTimeout(()=>{
+                done()
+                test.kill()
+                assert(passed, "timed out waiting for breakpoint")
+            }, 1900)
+
+            test.on("breakpoint-reached", (breakpoint)=>{
+                console.log("breakpoint reached cnt:", breakpoint)
+
+                if(cnt == 0) {
+                    test.execute(new Debugger.Command(Debugger.Command.Information.WATCH, ["'a'"]))
+                    test.step(Debugger.StepCommand.NEXT)
+                    cnt++
+                }
+
+                if(cnt == 1) {
+                    test.execute(new Debugger.Command(Debugger.Command.Information.UNWATCH, ["'a'"]))
+                    test.step(Debugger.StepCommand.NEXT)
+                    cnt++
+                }
+            })
+
+            test.on("watchers", (watchlist)=>{
+                console.log("watchers reached\n", file, "\n", watchlist)
+                passed = cnt == 1
+            })
+
+            test.start()
+        })
 
         // watchers: List all watchers and their values (automatically listed on each breakpoint)
         it("it lists all watchers and their values", (done)=>{})

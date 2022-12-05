@@ -30,8 +30,6 @@ module.exports = {
         let lines = str.split("\n")
         let test = listEntryRegex
 
-        console.log(str.replaceAll("\b", "\\b"))
-
         let cnt = 0
 
         for(let idx in lines){
@@ -100,6 +98,35 @@ module.exports = {
             let line = lines[i]
 
             if(listEntryRegex.test(line)){
+                result.push(line)
+            }
+        }
+
+        return result
+    },
+
+    parseWatchList: (entry)=>{
+        let lines  = entry.split("\n")
+        let isWatchers = false
+        let result = []
+        let emptyLineCnt = 0
+
+        for(let i in lines){
+            let line = lines[i]
+
+            if(line.trim().length == 0)
+                emptyLineCnt++
+            else
+                emptyLineCnt = 0
+
+            if(line.trim() == "Watchers:"){
+                isWatchers = true
+            }
+
+            if(emptyLineCnt == 1)
+                isWatchers = false
+
+            if(isWatchers){
                 result.push(line)
             }
         }
