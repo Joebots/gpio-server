@@ -9,7 +9,6 @@ const SESSION_TIMEOUT = 1000*60*120 // 120 minutes
 const scratchDir = fs.mkdtempSync(`${os.tmpdir()}/gpio-server-workdir`)
 const appDir = dirname(require.main.filename);
 
-
 let app = express()
 
 // app.use(express.json()); //Used to parse JSON bodies
@@ -19,6 +18,7 @@ app.use(cors({
 
 app.use(express.json());       // to support JSON-encoded bodies
 app.use(express.urlencoded({ extended: true }))
+app.use('/apps', express.static('../simmer'))
 
 app.post('/node/run', (req, res)=>{
 
@@ -75,7 +75,7 @@ app.post('/node/kill', (req, res)=>{
 })
 
 app.listen(8080, function () {
-    console.log('CORS-enabled web server listening on port 80')
+    console.log('CORS-enabled web server listening on port 8080')
 })
 
 function render(body){
